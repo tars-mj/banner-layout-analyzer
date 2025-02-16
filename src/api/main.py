@@ -28,7 +28,11 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://*.railway.app"  # Allow Railway domains
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,7 +91,8 @@ class ModelSingleton:
     @classmethod
     def get_instance(cls):
         if cls._instance is None:
-            model_path = Path("runs/detect/combined_detector_8s/weights/best.pt")
+            # Update path to use production model
+            model_path = Path("models/production/combined_detector_8s.pt")
             if not model_path.exists():
                 raise FileNotFoundError(f"Model file not found at {model_path}")
             cls._instance = LayoutDetector(str(model_path))

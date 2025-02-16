@@ -29,8 +29,10 @@ env/
 
 # Training results and models
 runs/
-models/
+models/*
+!models/production/
 *.pt
+!models/production/*.pt
 wandb/
 artifacts/
 analysis/
