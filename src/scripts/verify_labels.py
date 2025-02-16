@@ -71,7 +71,7 @@ def visualize_label(image_path: str, label_path: str, output_path: str = None):
             cv2.rectangle(img_with_boxes, (x1, y1), (x2, y2), (0, 255, 0), 2)
             
             # Add text with coordinates
-            text = f"Face {i+1}"
+            text = f"Logo {i+1}"
             cv2.putText(img_with_boxes, text, (x1, y1-5), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         
