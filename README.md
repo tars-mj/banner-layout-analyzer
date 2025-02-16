@@ -1,6 +1,34 @@
 # Banner Layout Analyzer
 
-A comprehensive solution for analyzing advertising banner layouts, combining deep learning-based object detection with practical print preparation tools. The project consists of three main components:
+<div align="center">
+  <img src="docs/banner_analyzer_preview.png" alt="Banner Layout Analyzer Preview" width="800"/>
+</div>
+
+A comprehensive solution for analyzing advertising banner layouts, combining deep learning-based object detection with practical print preparation tools.
+
+[Live Demo](https://frontend-production-683e.up.railway.app/)
+
+> **Try it out**: Check the `examples/` directory for sample banner layout files that you can use to test the application. These files represent real-world printing banner layouts with various combinations of faces, logos, and QR codes.
+
+## External Datasets Used
+
+This project utilizes the following external datasets for training:
+
+1. **WiderFace Dataset** - For face detection training
+   - Source: [WiderFace Dataset](http://shuoyang1213.me/WIDERFACE/)
+   - Description: A face detection benchmark dataset with faces in a wide range of scales, poses and occlusions.
+   - Used for: Training the face detection component of our model
+
+2. **Amazing Logos Dataset v4** - For logo detection training
+   - Source: [Amazing Logos v4 on HuggingFace](https://huggingface.co/datasets/iamkaikai/amazing_logos_v4)
+   - Description: A diverse collection of company logos and brand marks
+   - Used for: Training the logo detection component of our model
+
+The datasets were processed and combined using our custom pipeline to create a unified training dataset for banner layout analysis.
+
+## Project Components
+
+The project consists of three main components:
 
 1. **Training Pipeline**
    - Custom dataset preparation combining faces, logos, and QR codes
@@ -32,7 +60,7 @@ The system is designed to assist in the preparation of large-format advertising 
 ## Project Structure
 
 ```
-Banner-Layout-Analyzer-v2/
+Banner-Layout-Analyzer/
 ├── data/                    # Dataset storage
 │   ├── faces_dataset/       # Face detection dataset
 │   ├── logos_dataset/       # Logo detection dataset
@@ -57,7 +85,7 @@ Banner-Layout-Analyzer-v2/
 During project operation, several directories are created automatically:
 
 ```
-Banner-Layout-Analyzer-v2/
+Banner-Layout-Analyzer/
 ├── runs/                   # YOLOv8 training results (managed by Ultralytics)
 │   └── detect/            # Detection task results
 │       └── {name}/        # Training run results
@@ -97,7 +125,7 @@ Banner-Layout-Analyzer-v2/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/Banner-Layout-Analyzer-v2.git
+git clone https://github.com/yourusername/Banner-Layout-Analyzer.git
 cd Banner-Layout-Analyzer
 ```
 
@@ -167,6 +195,21 @@ data/
 │       └── labels/
 ├── logos_dataset/
 └── diverse_logos_dataset/
+```
+
+The labels are stored in YOLO format (normalized coordinates):
+```
+<class_id> <x_center> <y_center> <width> <height>
+```
+Where:
+- `class_id`: Integer representing the class (0 for faces, 1 for logos)
+- `x_center`, `y_center`: Normalized center coordinates (0-1) relative to image width and height
+- `width`, `height`: Normalized width and height (0-1) relative to image dimensions
+
+Example label file content:
+```
+0 0.716797 0.395833 0.216406 0.147222  # Face
+1 0.287109 0.322917 0.148438 0.145833  # Logo
 ```
 
 ## Training
@@ -326,91 +369,4 @@ npm install
 3. Start the development server:
 ```bash
 npm run dev
-```
-
-The frontend will be available at:
-- Frontend URL: http://localhost:5173
-- The application requires the API server to be running on http://localhost:8000
-
-## Using the Model
-
-```python
-from src.models.detector import LayoutDetector
-
-# Initialize detector with trained weights
-detector = LayoutDetector(model_path="runs/detect/combined_detector/weights/best.pt")
-
-# Detect objects
-results = detector.detect_all("path/to/image.jpg")
-
-# Results format
-{
-    "faces": [
-        {
-            "bbox": [x1, y1, x2, y2],
-            "confidence": confidence_score
-        }
-    ],
-    "logos": [
-        {
-            "bbox": [x1, y1, x2, y2],
-            "confidence": confidence_score
-        }
-    ]
-}
-```
-
-## API Server
-
-The project includes a FastAPI server for real-time banner analysis.
-
-### Running the API
-
-1. Start the API server:
-```bash
-python src/scripts/run_api.py --reload
-```
-
-2. The API will be available at:
-- API Endpoint: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-- OpenAPI Specification: http://localhost:8000/openapi.json
-
-### API Endpoints
-
-- `GET /health` - Check API health
-- `POST /api/detect` - Detect faces and logos in uploaded image
-
-### Example Usage
-
-```python
-import requests
-
-# Detect objects in image
-with open('image.jpg', 'rb') as f:
-    response = requests.post(
-        'http://localhost:8000/api/detect',
-        files={'file': f}
-    )
-
-results = response.json()
-print(results)
-```
-
-Example response:
-```json
-{
-    "faces": [
-        {
-            "bbox": [100, 200, 300, 400],
-            "confidence": 0.95
-        }
-    ],
-    "logos": [
-        {
-            "bbox": [500, 100, 600, 200],
-            "confidence": 0.87
-        }
-    ]
-}
 ```
