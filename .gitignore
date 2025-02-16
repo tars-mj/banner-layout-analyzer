@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.env/
+
+# Training results and models
+runs/
+models/
+*.pt
+wandb/
+artifacts/
+analysis/
+
+# Dataset files
+data/*_dataset/
+data/combined_data.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.csv
+*.json
+temp/
+logs/
+
+# W&B specific
+wandb/
+*.wandb
+test_results/
+data/
+test_results_interim/
+NOTES.md
