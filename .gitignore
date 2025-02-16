@@ -51,7 +51,10 @@ data/combined_data.yaml
 # Logs and temporary files
 *.log
 *.csv
-*.json
+# Ignore only specific JSON files
+test_results/**/*.json
+temp/**/*.json
+logs/**/*.json
 temp/
 logs/
 

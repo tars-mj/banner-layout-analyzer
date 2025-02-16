@@ -31,7 +31,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://*.railway.app"  # Allow Railway domains
+        "https://*.railway.app",  # Allow all Railway domains
+        "https://frontend-production-683e.up.railway.app"  # Your specific frontend domain
     ],
     allow_credentials=True,
     allow_methods=["*"],

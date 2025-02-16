@@ -1,7 +1,19 @@
 import axios from 'axios';
 import { DetectionResult } from '../types/detection';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Get environment
+const isDevelopment = import.meta.env.DEV;
+
+// Define fallback URLs
+const DEVELOPMENT_URL = 'http://localhost:8000';
+const PRODUCTION_URL = 'https://web-production-4e7af.up.railway.app';
+
+// Get API URL from environment or use fallback
+const API_URL = import.meta.env.VITE_API_URL || (isDevelopment ? DEVELOPMENT_URL : PRODUCTION_URL);
+
+console.log('Environment:', isDevelopment ? 'development' : 'production');
+console.log('API URL from env:', import.meta.env.VITE_API_URL);
+console.log('Using API URL:', API_URL);
 
 export const uploadImage = async (file: File): Promise<DetectionResult> => {
     if (!file) {
@@ -12,6 +24,7 @@ export const uploadImage = async (file: File): Promise<DetectionResult> => {
     formDataToSend.append('file', file);
 
     try {
+        console.log('Sending request to:', `${API_URL}/api/detect`); // For debugging
         const response = await axios.post<DetectionResult>(
             `${API_URL}/api/detect`,
             formDataToSend,
@@ -23,6 +36,7 @@ export const uploadImage = async (file: File): Promise<DetectionResult> => {
         );
         return response.data;
     } catch (error) {
+        console.error('Upload error:', error); // For debugging
         if (axios.isAxiosError(error) && error.response) {
             throw new Error(error.response.data.detail || 'Failed to upload image');
         }

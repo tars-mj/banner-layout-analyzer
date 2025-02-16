@@ -1,12 +1,13 @@
 import uvicorn
 import argparse
 from pathlib import Path
+import os
 
 def main():
     parser = argparse.ArgumentParser(description='Run Banner Layout Analyzer API')
     parser.add_argument('--host', type=str, default="0.0.0.0",
                       help='Host to run the API on')
-    parser.add_argument('--port', type=int, default=8000,
+    parser.add_argument('--port', type=int, default=int(os.getenv('PORT', '8000')),
                       help='Port to run the API on')
     parser.add_argument('--reload', action='store_true',
                       help='Enable auto-reload for development')
