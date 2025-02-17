@@ -85,18 +85,49 @@ def validate_image(file: UploadFile, content: bytes) -> bool:
     
     return True
 
-# Singleton for the model
+# Model loading configuration
+MODEL_PATH = Path("models/production/combined_detector_8s.pt")
+
+# Initialize model at startup
+@app.on_event("startup")
+async def startup_event():
+    try:
+        logger.info("Initializing model...")
+        if not MODEL_PATH.exists():
+            raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
+        
+        # Initialize model with memory optimization
+        model = ModelSingleton.get_instance()
+        logger.info("Model initialized successfully")
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
+        
+    except Exception as e:
+        logger.error(f"Error initializing model: {str(e)}")
+        raise
+
+# Singleton for the model with memory optimization
 class ModelSingleton:
     _instance = None
     
     @classmethod
     def get_instance(cls):
         if cls._instance is None:
-            # Update path to use production model
-            model_path = Path("models/production/combined_detector_8s.pt")
-            if not model_path.exists():
-                raise FileNotFoundError(f"Model file not found at {model_path}")
-            cls._instance = LayoutDetector(str(model_path))
+            try:
+                logger.info(f"Loading model from {MODEL_PATH}")
+                # Initialize model with half precision to reduce memory usage
+                cls._instance = LayoutDetector(str(MODEL_PATH))
+                logger.info("Model loaded successfully")
+                
+                # Force garbage collection after model loading
+                import gc
+                gc.collect()
+                
+            except Exception as e:
+                logger.error(f"Failed to load model: {str(e)}")
+                raise
         return cls._instance
 
 @app.get("/health")
@@ -191,6 +222,13 @@ async def detect_objects(file: UploadFile = File(...)):
         # Object detection
         detector = ModelSingleton.get_instance()
         results = detector.detect_all(image)
+        
+        # Clear memory
+        del image
+        del nparr
+        del contents
+        import gc
+        gc.collect()
         
         # Validate URLs in QR codes
         results = await validate_qr_codes(results)
