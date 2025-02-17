@@ -8,7 +8,7 @@ A comprehensive solution for analyzing advertising banner layouts, combining dee
 
 [Live Demo](https://frontend-production-683e.up.railway.app/)
 
-> **Try it out**: Check the `examples/` directory for sample banner layout files that you can use to test the application. These files represent real-world printing banner layouts with various combinations of faces, logos, and QR codes.
+> **Try it out**: Check the `examples/` directory for sample banner layout files that you can use to test the application. These files represent real-world printing banner layouts with various combinations of faces, logos, and QR codes. The filenames include the dimensions (e.g., `009_1000x706.jpg` indicates a banner with width 1000cm and height 706cm), which can be used to fill in the form dimensions in the application.
 
 ## External Datasets Used
 
