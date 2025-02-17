@@ -12,6 +12,12 @@ RUN pip install -e .
 
 RUN mkdir -p models/production
 
-EXPOSE 8000
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV WORKERS=1
+ENV PORT=8000
 
-CMD uvicorn src.api.main:app --host 0.0.0.0 --port $PORT 
+EXPOSE ${PORT}
+
+# Run with optimized parameters
+CMD uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT} --workers ${WORKERS} --limit-concurrency 1 --timeout-keep-alive 75 
