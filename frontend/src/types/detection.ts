@@ -41,4 +41,20 @@ export interface SmartSection {
     x: number;
     width: number;
     hasCollision?: boolean;
+}
+
+export interface AuthStatus {
+    status: 'checking' | 'success' | 'no_key' | 'invalid_key' | 'error';
+    authorized: boolean;
+}
+
+export interface LoginResponse {
+    message: string;
+    username: string;
+    api_key: string;
+}
+
+export interface LoginCredentials {
+    username: string;
+    password: string;
 } 

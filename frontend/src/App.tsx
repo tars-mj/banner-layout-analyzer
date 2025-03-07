@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { Container, Box, Alert, Snackbar, Paper, IconButton } from '@mui/material'
+import { useState, useEffect } from 'react'
+import { Container, Box, Alert, Snackbar, Paper, IconButton, Typography, Button } from '@mui/material'
 import { ImageUploader } from './components/ImageUploader'
 import { ImageViewer } from './components/ImageViewer'
 import { BannerFormComponent } from './components/BannerForm'
 import { DetectionChecklist } from './components/DetectionChecklist'
-import { uploadImage } from './services/api'
-import { DetectionResult, BannerForm } from './types/detection'
-import ReplayIcon from '@mui/icons-material/Replay';
+import { LoginForm } from './components/LoginForm'
+import { uploadImage, checkAuth, login, logout, getStoredUsername } from './services/api'
+import { DetectionResult, BannerForm, AuthStatus, LoginCredentials } from './types/detection'
+import ReplayIcon from '@mui/icons-material/Replay'
+import LogoutIcon from '@mui/icons-material/Logout'
 
 export const App = () => {
   const [selectedImage, setSelectedImage] = useState<string>('')
@@ -28,8 +30,63 @@ export const App = () => {
     showMargins: true
   })
   const [showBoundingBoxes, setShowBoundingBoxes] = useState(true)
+  const [authStatus, setAuthStatus] = useState<AuthStatus>({ status: 'checking', authorized: false })
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const [isLoginLoading, setIsLoginLoading] = useState(false)
+  const [username, setUsername] = useState<string | null>(null)
+
+  // Sprawdza autoryzację przy starcie aplikacji
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        setAuthStatus({ status: 'checking', authorized: false });
+        
+        // Sprawdź autoryzację
+        const status = await checkAuth(null); // Użyj null, aby funkcja używała zapisanego klucza
+        setAuthStatus(status);
+        
+        // Jeśli zalogowany, pobierz nazwę użytkownika
+        if (status.authorized) {
+          setUsername(getStoredUsername());
+        }
+      } catch (err) {
+        console.error('Auth error:', err);
+        setAuthStatus({ status: 'error', authorized: false });
+      }
+    };
+
+    verifyAuth();
+  }, []);
 
   const isFormValid = formData.maxSectionWidth > 0 && selectedFile !== null;
+
+  const handleLogin = async (credentials: LoginCredentials) => {
+    setIsLoginLoading(true);
+    setLoginError(null);
+    
+    try {
+      await login(credentials);
+      setAuthStatus({ status: 'success', authorized: true });
+      setUsername(credentials.username);
+    } catch (err) {
+      console.error('Login error:', err);
+      setLoginError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setAuthStatus({ status: 'no_key', authorized: false });
+      setUsername(null);
+      handleReset(); // Reset aplikacji przy wylogowaniu
+    } catch (err) {
+      console.error('Logout error:', err);
+      setError('Logout failed');
+    }
+  };
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -123,12 +180,41 @@ export const App = () => {
     });
   };
 
+  // Renderuj ekran logowania, jeśli użytkownik nie jest zalogowany
+  if (authStatus.status === 'checking') {
+    return (
+      <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography variant="h6">Checking authorization...</Typography>
+      </Box>
+    );
+  }
+
+  if (!authStatus.authorized) {
+    return (
+      <Box sx={{ 
+        height: '100vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        bgcolor: '#f5f5f5'
+      }}>
+        <LoginForm 
+          onLogin={handleLogin}
+          isLoading={isLoginLoading}
+          error={loginError}
+        />
+      </Box>
+    );
+  }
+
+  // Główna aplikacja - gdy użytkownik jest zalogowany
   return (
     <Box sx={{ 
-      height: '100vh',
+      minHeight: '100vh',
       bgcolor: '#f5f5f5',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      overflow: 'hidden'
     }}>
       <Container 
         disableGutters
@@ -137,7 +223,8 @@ export const App = () => {
           flex: 1,
           p: 0,
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          overflow: 'auto'
         }}
       >
         {/* Top Form Section - przylega do krawędzi */}
@@ -154,6 +241,8 @@ export const App = () => {
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             m: 0,
             width: '100%',
+            position: 'relative',
+            boxSizing: 'border-box'
           }}
         >
           <BannerFormComponent
@@ -170,8 +259,12 @@ export const App = () => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: 'calc(100vh - 300px)',
-          gap: 2
+          minHeight: { xs: 'auto', md: 'calc(100vh - 300px)' },
+          gap: 2,
+          position: 'relative',
+          px: 2,
+          pb: 10,
+          boxSizing: 'border-box'
         }}>
           {!selectedImage ? (
             <Paper 
@@ -257,9 +350,36 @@ export const App = () => {
             {error}
           </Alert>
         </Snackbar>
+        
+        {/* Przycisk wylogowania w lewym dolnym rogu */}
+        <Box 
+          sx={{ 
+            position: 'fixed', 
+            bottom: 20, 
+            left: 20, 
+            zIndex: 1000
+          }}
+        >
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{ 
+              px: 3, 
+              py: 1, 
+              borderRadius: 2,
+              boxShadow: 3,
+              textTransform: 'none',
+              fontSize: '1rem'
+            }}
+          >
+            {username ? `Logout (${username})` : 'Logout'}
+          </Button>
+        </Box>
       </Container>
     </Box>
-  )
+  );
 }
 
 export default App

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import cv2
@@ -9,6 +9,8 @@ import imghdr
 import aiohttp
 import asyncio
 from urllib.parse import urlparse
+import secrets
+from typing import Dict, Optional
 
 # Logger configuration
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +20,15 @@ logger = logging.getLogger(__name__)
 MAX_FILE_SIZE = 1 * 1024 * 1024  # 1MB
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 ALLOWED_MIME_TYPES = {'image/jpeg', 'image/png'}
+
+# Prosta baza użytkowników (w prawdziwym systemie użylibyśmy bazy danych i haszowania haseł)
+USERS = {
+    "opinion": "opinion2024",
+    "pprins": "admin2020"
+}
+
+# Przechowywanie aktywnych kluczy API (w prawdziwym systemie byłoby to w bazie danych)
+ACTIVE_API_KEYS: Dict[str, str] = {}  # key: username
 
 app = FastAPI(
     title="Banner Layout Analyzer API",
@@ -38,6 +49,99 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Funkcja do weryfikacji klucza API
+async def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    if api_key is None:
+        raise HTTPException(
+            status_code=401,
+            detail="API key is missing",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    # Sprawdź, czy klucz jest aktywny
+    for username, key in ACTIVE_API_KEYS.items():
+        if secrets.compare_digest(key, api_key):
+            return username
+    
+    raise HTTPException(
+        status_code=401,
+        detail="Invalid API key",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+
+# Endpoint logowania
+@app.post("/api/login")
+async def login(username: str, password: str):
+    """
+    Endpoint do logowania użytkownika
+    
+    Args:
+        username: Nazwa użytkownika
+        password: Hasło użytkownika
+        
+    Returns:
+        dict: Informacje o logowaniu i klucz API
+    """
+    if username not in USERS or USERS[username] != password:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    # Jeśli użytkownik ma już aktywny klucz, użyj go ponownie
+    if username in ACTIVE_API_KEYS:
+        api_key = ACTIVE_API_KEYS[username]
+    else:
+        # Generuj nowy klucz API
+        api_key = secrets.token_hex(32)
+        ACTIVE_API_KEYS[username] = api_key
+    
+    return {
+        "message": "Login successful",
+        "username": username,
+        "api_key": api_key
+    }
+
+# Endpoint wylogowania
+@app.post("/api/logout")
+async def logout(username: str = Depends(verify_api_key)):
+    """
+    Endpoint do wylogowania użytkownika
+    
+    Args:
+        username: Nazwa użytkownika (pobierana automatycznie z klucza API)
+        
+    Returns:
+        dict: Informacja o wylogowaniu
+    """
+    if username in ACTIVE_API_KEYS:
+        del ACTIVE_API_KEYS[username]
+    
+    return {"message": "Logout successful"}
+
+# Zachowujemy stary endpoint autoryzacji dla kompatybilności
+@app.get("/api/auth")
+async def verify_auth(auth_key: str = Query(None)):
+    """
+    Verifies if the provided authorization key is valid
+    
+    Args:
+        auth_key: Authorization key to verify
+        
+    Returns:
+        dict: Authorization status
+    """
+    if auth_key is None:
+        return {"status": "no_key", "authorized": False}
+    
+    # Sprawdź, czy klucz jest aktywny
+    for username, key in ACTIVE_API_KEYS.items():
+        if secrets.compare_digest(key, auth_key):
+            return {"status": "success", "authorized": True}
+    
+    return {"status": "invalid_key", "authorized": False}
 
 def validate_image(file: UploadFile, content: bytes) -> bool:
     """
@@ -193,16 +297,31 @@ async def validate_qr_codes(detections: dict) -> dict:
     return detections
 
 @app.post("/api/detect")
-async def detect_objects(file: UploadFile = File(...)):
+async def detect_objects(
+    file: UploadFile = File(...),
+    username: str = Depends(verify_api_key)
+):
+    """
+    Endpoint for detecting objects in an image
+    
+    Args:
+        file: Image file to analyze
+        username: Username from API key verification
+        
+    Returns:
+        dict: Detected objects
+    """
     try:
+        logger.info(f"Processing upload from user: {username}")
+        
         # Read file content
-        contents = await file.read()
+        content = await file.read()
         
         # Validate file
-        validate_image(file, contents)
+        validate_image(file, content)
         
         # Convert image
-        nparr = np.frombuffer(contents, np.uint8)
+        nparr = np.frombuffer(content, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if image is None:
@@ -226,7 +345,7 @@ async def detect_objects(file: UploadFile = File(...)):
         # Clear memory
         del image
         del nparr
-        del contents
+        del content
         import gc
         gc.collect()
         
