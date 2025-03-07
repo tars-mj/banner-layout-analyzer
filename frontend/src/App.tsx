@@ -116,20 +116,29 @@ export const App = () => {
       flexDirection: 'column'
     }}>
       <Container 
-        maxWidth="lg" 
+        disableGutters
+        maxWidth={false} 
         sx={{
           flex: 1,
-          py: 3
+          p: 0,
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
-        {/* Top Form Section */}
+        {/* Top Form Section - przylega do krawędzi */}
         <Paper 
-          elevation={3}
+          elevation={0}
+          square
           sx={{
-            p: 3,
+            pt: 4,
+            pb: 4,
+            px: 3,
             mb: 4,
             bgcolor: 'white',
-            borderRadius: 2
+            borderRadius: 0,
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            m: 0,
+            width: '100%',
           }}
         >
           <BannerFormComponent
