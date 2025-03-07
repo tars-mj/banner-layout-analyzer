@@ -3,6 +3,7 @@ import { Container, Box, Alert, Snackbar, Paper, IconButton } from '@mui/materia
 import { ImageUploader } from './components/ImageUploader'
 import { ImageViewer } from './components/ImageViewer'
 import { BannerFormComponent } from './components/BannerForm'
+import { DetectionChecklist } from './components/DetectionChecklist'
 import { uploadImage } from './services/api'
 import { DetectionResult, BannerForm } from './types/detection'
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -19,22 +20,36 @@ export const App = () => {
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<BannerForm>({
     width: 0,
-    height: 0,
-    maxSectionWidth: 0,
+    height: 500,
+    maxSectionWidth: 300,
     showSections: true,
     sectionPositions: [],
-    margin: 0,
+    margin: 20,
     showMargins: true
   })
   const [showBoundingBoxes, setShowBoundingBoxes] = useState(true)
 
-  const isFormValid = formData.width > 0 && 
-                     formData.height > 0 && 
-                     formData.maxSectionWidth > 0 &&
-                     selectedFile !== null;
+  const isFormValid = formData.maxSectionWidth > 0 && selectedFile !== null;
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
+    
+    // Odczytaj szerokość obrazu
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      // Aktualizuj formData z szerokością obrazu
+      setFormData(prev => ({
+        ...prev,
+        width: img.width // Ustawiam szerokość na podstawie wymiarów obrazu
+      }));
+      
+      // Zwolnij URL obiektu
+      URL.revokeObjectURL(objectUrl);
+    };
+    
+    img.src = objectUrl;
   };
 
   const handleImageUpload = async () => {
@@ -99,11 +114,11 @@ export const App = () => {
     });
     setFormData({
       width: 0,
-      height: 0,
-      maxSectionWidth: 0,
+      height: 500,
+      maxSectionWidth: 300,
       showSections: true,
       sectionPositions: [],
-      margin: 0,
+      margin: 20,
       showMargins: true
     });
   };
@@ -190,13 +205,28 @@ export const App = () => {
                 gap: 3
               }}
             >
-              <ImageViewer 
-                imageUrl={selectedImage}
-                detections={detections}
-                formData={formData}
-                onSectionPositionsChange={handleSectionPositionsChange}
-                showBoundingBoxes={showBoundingBoxes}
-              />
+              <Box 
+                sx={{
+                  width: '100%',
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', md: 'row' },
+                  alignItems: { xs: 'center', md: 'flex-start' },
+                  justifyContent: 'center',
+                  gap: 3
+                }}
+              >
+                <ImageViewer 
+                  imageUrl={selectedImage}
+                  detections={detections}
+                  formData={formData}
+                  onSectionPositionsChange={handleSectionPositionsChange}
+                  showBoundingBoxes={showBoundingBoxes}
+                />
+                <DetectionChecklist 
+                  detections={detections}
+                />
+              </Box>
+              
               <IconButton 
                 onClick={handleReset}
                 sx={{ 
