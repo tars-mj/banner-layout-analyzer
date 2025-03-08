@@ -26,7 +26,7 @@ export const App = () => {
     maxSectionWidth: 300,
     showSections: true,
     sectionPositions: [],
-    margin: 20,
+    margin: 50,
     showMargins: true
   })
   const [showBoundingBoxes, setShowBoundingBoxes] = useState(true)
@@ -175,7 +175,7 @@ export const App = () => {
       maxSectionWidth: 300,
       showSections: true,
       sectionPositions: [],
-      margin: 20,
+      margin: 50,
       showMargins: true
     });
   };

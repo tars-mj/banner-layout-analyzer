@@ -1,8 +1,9 @@
 import React from 'react';
-import { Paper, Typography, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Paper, Typography, List, ListItem, ListItemIcon, ListItemText, Box, Tooltip } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { DetectionResult } from '../types/detection';
 
 interface DetectionChecklistProps {
@@ -10,11 +11,20 @@ interface DetectionChecklistProps {
 }
 
 export const DetectionChecklist: React.FC<DetectionChecklistProps> = ({ detections }) => {
+  // Sprawdź, czy w QR kodach jest niedziałający link
+  const hasInvalidQrUrl = detections.qrcodes.some(qr => qr.isValidUrl === false);
+  
   // Lista wszystkich możliwych elementów do detekcji
   const items = [
     { name: 'Faces', detected: detections.faces.length > 0, supported: true },
     { name: 'Logo', detected: detections.logos.length > 0, supported: true },
-    { name: 'QR Code', detected: detections.qrcodes.length > 0, supported: true },
+    { 
+      name: 'QR Code', 
+      detected: detections.qrcodes.length > 0, 
+      supported: true,
+      hasWarning: hasInvalidQrUrl,
+      warningText: 'Warning: The URL in the QR code is not valid or cannot be accessed'
+    },
     { name: 'Disclaimer', detected: false, supported: false },
     { name: 'CTA', detected: false, supported: false },
     { name: 'Headliner', detected: false, supported: false },
@@ -63,6 +73,25 @@ export const DetectionChecklist: React.FC<DetectionChecklistProps> = ({ detectio
                 } 
               }} 
             />
+            
+            {/* Ikona ostrzegawcza dla QR kodów z niedziałającym linkiem */}
+            {item.hasWarning && (
+              <Tooltip 
+                title={item.warningText || ''} 
+                arrow 
+                placement="right"
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <WarningAmberIcon 
+                    sx={{ 
+                      color: '#ff9800', 
+                      fontSize: '1.2rem',
+                      ml: 1
+                    }} 
+                  />
+                </Box>
+              </Tooltip>
+            )}
           </ListItem>
         ))}
       </List>
